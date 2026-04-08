@@ -20,51 +20,73 @@ jobs:
       - name: Simulate build
         run: |
           echo "Building project..."
-          sleep 5
+          sleep 30
           echo "Build complete"
 
       - name: Simulate tests
         run: |
           echo "Running tests..."
-          sleep 3
+          sleep 30
           echo "All tests passed"
 
       - name: CPU stress test
         run: |
-          echo "Generating CPU load..."
-          timeout 10 dd if=/dev/urandom bs=1M count=100 | md5sum || true
+          echo "Generating sustained CPU load..."
+          for i in $(seq 1 6); do
+            echo "CPU burst $i/6..."
+            timeout 15 dd if=/dev/urandom bs=1M count=200 | md5sum || true
+            sleep 5
+          done
           echo "CPU stress done"
 
       - name: Memory allocation test
         run: |
-          echo "Allocating memory..."
+          echo "Allocating memory in waves..."
           python3 -c "
           import time
-          data = []
-          for i in range(50):
-              data.append(bytearray(1024 * 1024))  # 1MB chunks
-              time.sleep(0.1)
-          print(f'Allocated {len(data)} MB')
-          time.sleep(2)
+          for wave in range(3):
+              data = []
+              for i in range(100):
+                  data.append(bytearray(1024 * 1024))  # 1MB chunks
+                  time.sleep(0.1)
+              print(f'Wave {wave+1}: Allocated {len(data)} MB')
+              time.sleep(10)
+              del data
+              print(f'Wave {wave+1}: Released')
+              time.sleep(5)
           "
           echo "Memory test done"
 
       - name: Disk I/O test
         run: |
-          echo "Writing test file..."
-          dd if=/dev/zero of=testfile bs=1M count=50 2>&1
-          sync
-          echo "Reading test file..."
-          dd if=testfile of=/dev/null bs=1M 2>&1
-          rm -f testfile
+          echo "Heavy disk I/O..."
+          for i in $(seq 1 5); do
+            echo "Disk pass $i/5..."
+            dd if=/dev/zero of=testfile-$i bs=1M count=100 2>&1
+            sync
+            dd if=testfile-$i of=/dev/null bs=1M 2>&1
+            rm -f testfile-$i
+            sleep 5
+          done
           echo "Disk I/O test done"
 
       - name: Network test
         run: |
           echo "Network activity..."
-          curl -sS -o /dev/null https://github.com
-          curl -sS -o /dev/null https://api.github.com
+          for i in $(seq 1 10); do
+            curl -sS -o /dev/null https://github.com
+            curl -sS -o /dev/null https://api.github.com
+            sleep 3
+          done
           echo "Network test done"
+
+      - name: Long running process simulation
+        run: |
+          echo "Simulating a long compile/test cycle..."
+          sleep 60
+          echo "Phase 1 done"
+          sleep 60
+          echo "Phase 2 done"
 
       - name: Done
         run: echo "All steps completed — check the TizyCI metrics report artifact"
