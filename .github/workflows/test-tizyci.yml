@@ -1,0 +1,70 @@
+name: Test TizyCI GitHub Action
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test-tizyci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: saravananpolyglot/tizyci-github@v1
+        with:
+          token: ${{ secrets.TIZYCI_AGENT_TOKEN }}
+
+      - uses: actions/checkout@v4
+
+      - name: Simulate build
+        run: |
+          echo "Building project..."
+          sleep 5
+          echo "Build complete"
+
+      - name: Simulate tests
+        run: |
+          echo "Running tests..."
+          sleep 3
+          echo "All tests passed"
+
+      - name: CPU stress test
+        run: |
+          echo "Generating CPU load..."
+          timeout 10 dd if=/dev/urandom bs=1M count=100 | md5sum || true
+          echo "CPU stress done"
+
+      - name: Memory allocation test
+        run: |
+          echo "Allocating memory..."
+          python3 -c "
+          import time
+          data = []
+          for i in range(50):
+              data.append(bytearray(1024 * 1024))  # 1MB chunks
+              time.sleep(0.1)
+          print(f'Allocated {len(data)} MB')
+          time.sleep(2)
+          "
+          echo "Memory test done"
+
+      - name: Disk I/O test
+        run: |
+          echo "Writing test file..."
+          dd if=/dev/zero of=testfile bs=1M count=50 2>&1
+          sync
+          echo "Reading test file..."
+          dd if=testfile of=/dev/null bs=1M 2>&1
+          rm -f testfile
+          echo "Disk I/O test done"
+
+      - name: Network test
+        run: |
+          echo "Network activity..."
+          curl -sS -o /dev/null https://github.com
+          curl -sS -o /dev/null https://api.github.com
+          echo "Network test done"
+
+      - name: Done
+        run: echo "All steps completed — check the TizyCI metrics report artifact"
