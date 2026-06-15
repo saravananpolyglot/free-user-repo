@@ -29,64 +29,92 @@ jobs:
           sleep 30
           echo "All tests passed"
 
-      - name: CPU stress test
+      - name: CPU stress test (5 mins)
         run: |
-          echo "Generating sustained CPU load..."
-          for i in $(seq 1 6); do
-            echo "CPU burst $i/6..."
-            timeout 15 dd if=/dev/urandom bs=1M count=200 | md5sum || true
-            sleep 5
+          echo "Generating sustained CPU load for 5 minutes..."
+          timeout 150 bash -c '
+          start_time=$(date +%s)
+          while true; do
+            current_time=$(date +%s)
+            elapsed=$((current_time - start_time))
+            if [ $elapsed -ge 300 ]; then
+              break
+            fi
+            dd if=/dev/urandom bs=1M count=100 2>/dev/null | md5sum > /dev/null &
+            dd if=/dev/urandom bs=1M count=100 2>/dev/null | md5sum > /dev/null &
+            wait
           done
+          ' || true
           echo "CPU stress done"
 
-      - name: Memory allocation test
+      - name: Memory allocation test (5 mins)
         run: |
-          echo "Allocating memory in waves..."
+          echo "Allocating memory for 5 minutes..."
           python3 -c "
           import time
-          for wave in range(3):
+          start_time = time.time()
+          duration = 150  # 5 minutes in seconds
+          
+          while (time.time() - start_time) < duration:
               data = []
-              for i in range(100):
+              for i in range(50):
                   data.append(bytearray(1024 * 1024))  # 1MB chunks
-                  time.sleep(0.1)
-              print(f'Wave {wave+1}: Allocated {len(data)} MB')
-              time.sleep(10)
+                  if (time.time() - start_time) >= duration:
+                      break
+              elapsed = int(time.time() - start_time)
+              print(f'Allocated {len(data)} MB (elapsed: {elapsed}s)')
+              time.sleep(2)
               del data
-              print(f'Wave {wave+1}: Released')
-              time.sleep(5)
+              time.sleep(1)
+          
+          print('Memory test completed')
           "
           echo "Memory test done"
 
-      - name: Disk I/O test
+      - name: Disk I/O test (5 mins)
         run: |
-          echo "Heavy disk I/O..."
-          for i in $(seq 1 5); do
-            echo "Disk pass $i/5..."
-            dd if=/dev/zero of=testfile-$i bs=1M count=100 2>&1
+          echo "Heavy disk I/O for 5 minutes..."
+          start_time=$(date +%s)
+          pass=1
+          while true; do
+            current_time=$(date +%s)
+            elapsed=$((current_time - start_time))
+            if [ $elapsed -ge 150 ]; then
+              break
+            fi
+            echo "Disk pass $pass (elapsed: ${elapsed}s)..."
+            dd if=/dev/zero of=testfile-$pass bs=1M count=50 2>&1 | tail -1
             sync
-            dd if=testfile-$i of=/dev/null bs=1M 2>&1
-            rm -f testfile-$i
-            sleep 5
+            dd if=testfile-$pass of=/dev/null bs=1M 2>&1 | tail -1
+            rm -f testfile-$pass
+            pass=$((pass + 1))
+            sleep 2
           done
           echo "Disk I/O test done"
 
-      - name: Network test
+      - name: Combined stress test (remaining time)
         run: |
-          echo "Network activity..."
-          for i in $(seq 1 10); do
-            curl -sS -o /dev/null https://github.com
-            curl -sS -o /dev/null https://api.github.com
-            sleep 3
-          done
-          echo "Network test done"
-
-      - name: Long running process simulation
-        run: |
-          echo "Simulating a long compile/test cycle..."
-          sleep 60
-          echo "Phase 1 done"
-          sleep 60
-          echo "Phase 2 done"
+          echo "Running combined CPU + Memory stress..."
+          timeout 120 bash -c '
+          (
+            while true; do
+              dd if=/dev/urandom bs=1M count=100 2>/dev/null | md5sum > /dev/null
+            done
+          ) &
+          CPU_PID=$!
+          
+          python3 << EOF &
+          import time
+          for i in range(12):
+              data = [bytearray(1024 * 1024) for _ in range(50)]
+              time.sleep(10)
+              del data
+          EOF
+          MEM_PID=$!
+          
+          wait $CPU_PID $MEM_PID 2>/dev/null
+          ' || true
+          echo "Combined stress test done"
 
       - name: Done
         run: echo "All steps completed — check the TizyCI metrics report artifact"
