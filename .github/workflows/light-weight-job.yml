@@ -9,47 +9,10 @@ jobs:
     timeout-minutes: 10
     
     steps:
-      - uses: saravananpolyglot/tizyci-github@v1
-        with:
-          token: ${{ secrets.TIZYCI_AGENT_TOKEN }}
-          
       - name: Checkout code
         uses: actions/checkout@v4
       
       - name: Step 1 - Light echo
         run: echo "Starting light workflow at $(date)"
       
-      - name: Step 2 - Sleep 1 minute
-        run: sleep 60
-      
-      - name: Step 3 - Simple list
-        run: |
-          echo "System info:"
-          echo "Uptime: $(uptime)"
-          echo "Current directory: $(pwd)"
-      
-      - name: Step 4 - Sleep 1 minute
-        run: sleep 60
-      
-      - name: Step 5 - Display date
-        run: echo "Current time: $(date)"
-      
-      - name: Step 6 - Sleep 1 minute
-        run: sleep 60
-      
-      - name: Step 7 - List files
-        run: ls -la
-      
-      - name: Step 8 - Sleep 1 minute
-        run: sleep 60
-      
-      - name: Step 9 - Environment check
-        run: |
-          echo "Shell: $(echo $SHELL)"
-          echo "User: $(whoami)"
-      
-      - name: Step 10 - Final sleep
-        run: sleep 60
-      
-      - name: Step 11 - Completion
-        run: echo "Workflow completed at $(date)"
+      # ... rest of steps
