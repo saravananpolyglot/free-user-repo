@@ -1,4 +1,14 @@
-  cishell-arm:
+name: Test TizyCI GitHub Action
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test-tizyci:
     runs-on: ubuntu-latest-arm64
     steps:
       - uses: saravananpolyglot/tizyci-github@v1
