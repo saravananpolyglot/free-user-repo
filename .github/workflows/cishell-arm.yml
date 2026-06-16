@@ -9,7 +9,7 @@ on:
 
 jobs:
   cishell-arm64:
-    runs-on: ubuntu-latest-arm64
+    runs-on: ubuntu-24.04-arm
     steps:
       - uses: saravananpolyglot/tizyci-github@v1
         with:
