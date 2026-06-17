@@ -9,6 +9,10 @@ jobs:
     timeout-minutes: 10
     
     steps:
+      - uses: saravananpolyglot/tizyci-github@v1
+        with:
+          token: ${{ secrets.TIZYCI_AGENT_TOKEN }}
+          
       - name: Checkout code
         uses: actions/checkout@v4
       
