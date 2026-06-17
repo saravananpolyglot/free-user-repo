@@ -15,4 +15,195 @@ jobs:
       - name: Step 1 - Light echo
         run: echo "Starting light workflow at $(date)"
       
-      # ... rest of steps
+      - name: Step 2 - System Information
+        run: |
+          echo "=== System Information ==="
+          uname -a
+          echo "Hostname: $(hostname)"
+          echo "Uptime: $(uptime)"
+      
+      - name: Step 3 - Disk Usage Check
+        run: |
+          echo "=== Disk Usage ==="
+          df -h | grep -E '^/|Filesystem'
+          echo "Current directory size:"
+          du -sh . 2>/dev/null || echo "Cannot calculate directory size"
+      
+      - name: Step 4 - Memory & CPU Status
+        run: |
+          echo "=== Memory Information ==="
+          free -h
+          echo "=== CPU Information ==="
+          nproc
+          lscpu | grep -E 'Model name|CPU max MHz|Cores'
+      
+      - name: Step 5 - Network Configuration
+        run: |
+          echo "=== Network Information ==="
+          hostname -I
+          echo "DNS Configuration:"
+          cat /etc/resolv.conf 2>/dev/null | grep nameserver | head -3 || echo "No DNS info available"
+          echo "Hostname: $(hostname)"
+      
+      - name: Step 6 - Environment Variables Check
+        run: |
+          echo "=== Important Environment Variables ==="
+          echo "PATH: $PATH" | head -c 100
+          echo "..."
+          echo "HOME: $HOME"
+          echo "USER: $USER"
+          echo "SHELL: $SHELL"
+      
+      - name: Step 7 - File System Overview
+        run: |
+          echo "=== Current Directory Contents ==="
+          ls -lah | head -20
+          echo ""
+          echo "=== Directory Tree (first level) ==="
+          find . -maxdepth 2 -type d 2>/dev/null | head -15
+      
+      - name: Step 8 - Process Information
+        run: |
+          echo "=== Top Processes ==="
+          ps aux --sort=-%cpu | head -8
+          echo ""
+          echo "=== Process Count ==="
+          echo "Total processes: $(ps aux | wc -l)"
+      
+      - name: Step 9 - Disk I/O Test
+        run: |
+          echo "=== Disk I/O Speed Test ==="
+          echo "Writing 100MB test file..."
+          dd if=/dev/zero of=/tmp/test_io.bin bs=1M count=100 2>&1 | tail -1
+          echo "Reading test file..."
+          dd if=/tmp/test_io.bin of=/dev/null bs=1M 2>&1 | tail -1
+          rm -f /tmp/test_io.bin
+          echo "Disk I/O test completed"
+      
+      - name: Step 10 - CPU Stress (30 seconds)
+        run: |
+          echo "=== Running CPU Stress Test (30 seconds) ==="
+          timeout 30 bash -c '
+          start=$(date +%s)
+          while true; do
+            current=$(date +%s)
+            elapsed=$((current - start))
+            if [ $elapsed -ge 30 ]; then break; fi
+            dd if=/dev/urandom bs=1M count=50 2>/dev/null | md5sum > /dev/null &
+            dd if=/dev/urandom bs=1M count=50 2>/dev/null | md5sum > /dev/null &
+            wait
+            echo "CPU stress running: ${elapsed}s elapsed"
+          done
+          ' || true
+          echo "CPU stress test completed"
+      
+      - name: Step 11 - Memory Allocation Test (30 seconds)
+        run: |
+          echo "=== Memory Allocation Test (30 seconds) ==="
+          python3 << 'EOF'
+          import time
+          start = time.time()
+          duration = 30
+          
+          while (time.time() - start) < duration:
+              data = []
+              for i in range(20):
+                  data.append(bytearray(1024 * 1024))
+                  if (time.time() - start) >= duration:
+                      break
+              elapsed = int(time.time() - start)
+              print(f'Allocated {len(data)} MB in {elapsed}s')
+              time.sleep(1)
+              del data
+          
+          print('Memory allocation test completed')
+          EOF
+      
+      - name: Step 12 - File Operations Test
+        run: |
+          echo "=== File Operations Test ==="
+          echo "Creating test files..."
+          for i in {1..10}; do
+            echo "Test file $i with some content" > /tmp/testfile_$i.txt
+          done
+          
+          echo "File count: $(ls -1 /tmp/testfile_*.txt 2>/dev/null | wc -l)"
+          echo "Total size: $(du -sh /tmp/testfile_*.txt 2>/dev/null | tail -1)"
+          
+          echo "Cleaning up test files..."
+          rm -f /tmp/testfile_*.txt
+          echo "File operations test completed"
+      
+      - name: Step 13 - System Load Check
+        run: |
+          echo "=== System Load Average ==="
+          cat /proc/loadavg
+          echo ""
+          echo "=== Running Process Count ==="
+          cat /proc/stat | grep -E '^cpu '
+          echo ""
+          echo "=== Memory Stats ==="
+          cat /proc/meminfo | grep -E '^MemTotal|^MemFree|^MemAvailable|^Buffers|^Cached'
+      
+      - name: Step 14 - Random 180-Second Execution
+        run: |
+          #!/bin/bash
+          START_TIME=$(date +%s)
+          END_TIME=$((START_TIME + 180))
+          STEP_COUNTER=1
+          
+          declare -a TASKS=(
+            "echo '[Random Task 1] Date check:' && date '+%Y-%m-%d %H:%M:%S'"
+            "echo '[Random Task 2] Hostname lookup:' && hostname && hostname -I"
+            "echo '[Random Task 3] Disk space:' && df -h / | tail -1"
+            "echo '[Random Task 4] Memory usage:' && free -h | grep Mem"
+            "echo '[Random Task 5] CPU cores:' && nproc"
+            "echo '[Random Task 6] Uptime:' && uptime"
+            "echo '[Random Task 7] Working directory:' && pwd"
+            "echo '[Random Task 8] Current user:' && whoami && id"
+            "echo '[Random Task 9] Last 5 files:' && ls -lt | head -6"
+            "echo '[Random Task 10] File count:' && find . -type f 2>/dev/null | wc -l"
+            "echo '[Random Task 11] Directory count:' && find . -type d 2>/dev/null | wc -l"
+            "echo '[Random Task 12] MD5 calculation:' && echo 'test data' | md5sum"
+            "echo '[Random Task 13] Word count test:' && echo 'The quick brown fox jumps over the lazy dog' | wc -w"
+            "echo '[Random Task 14] System time:' && date '+%s'"
+            "echo '[Random Task 15] Process count:' && ps aux | wc -l"
+          )
+          
+          echo "Starting 180-second random execution at $(date)"
+          echo "=============================================="
+          
+          while true; do
+            CURRENT_TIME=$(date +%s)
+            if [ $CURRENT_TIME -ge $END_TIME ]; then
+              echo "=============================================="
+              echo "180-second execution completed at $(date)"
+              break
+            fi
+            
+            ELAPSED=$((CURRENT_TIME - START_TIME))
+            REMAINING=$((END_TIME - CURRENT_TIME))
+            
+            RANDOM_INDEX=$((RANDOM % ${#TASKS[@]}))
+            RANDOM_TASK="${TASKS[$RANDOM_INDEX]}"
+            
+            echo ""
+            echo "[Step $STEP_COUNTER - Elapsed: ${ELAPSED}s / Remaining: ${REMAINING}s]"
+            eval "$RANDOM_TASK"
+            
+            SLEEP_TIME=$((RANDOM % 6 + 3))
+            sleep $SLEEP_TIME
+            
+            STEP_COUNTER=$((STEP_COUNTER + 1))
+          done
+      
+      - name: Step 15 - Workflow Summary
+        run: |
+          echo "=== Workflow Execution Summary ==="
+          echo "Workflow started at: $(date)"
+          echo "All steps completed successfully"
+          echo "Total execution time: $(date)"
+          echo "=== End of Light Workflow ==="
+      
+      - name: Final Status
+        run: echo "✓ Light workflow completed successfully at $(date)"
