@@ -3,6 +3,10 @@ name: Light 5-Minute Workflow
 on:
   workflow_dispatch:
 
+permissions:
+  checks: write
+  contents: read
+
 jobs:
   light-task:
     runs-on: ubuntu-latest
